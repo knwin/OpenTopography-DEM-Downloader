@@ -40,7 +40,7 @@ Once finished, the log screen will be something like this
 
 And DEM is now in the layer panel
 
-![DEM layer](images/Image10.png)
+![DEM layer](images/Image11.png)
 
 This layer is temporary and you need to save it for furture use.
 
