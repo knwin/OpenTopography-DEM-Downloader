@@ -27,10 +27,10 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         #self.addParameter(QgsProcessingParameterString('url', 'url', multiLine=False, defaultValue='https://portal.opentopography.org/API/globaldem?demtype=SRTMGL3&south=20.5&north=21.5&west=94.5&east=95.5'))
-        self.addParameter(QgsProcessingParameterEnum('DEMs', 'Select DEM to download', options=['SRTM 90m','SRTM 30m','ALOS World 3D 30m','SRTM GL1 Ellipsoidal 30m','Global Bathymetry SRTM15+ V2.1','Copernicus Global DSM 90m*','Copernicus Global DSM 30m*','NASADEM Global DEM*'], allowMultiple=False, defaultValue=[0]))
+        self.addParameter(QgsProcessingParameterEnum('DEMs', 'Select DEM to download', options=['SRTM 90m','SRTM 30m','ALOS World 3D 30m','SRTM GL1 Ellipsoidal 30m','Global Bathymetry SRTM15+ V2.1','Copernicus Global DSM 90m','Copernicus Global DSM 30m','NASADEM Global DEM'], allowMultiple=False, defaultValue=[0]))
         self.addParameter(QgsProcessingParameterExtent('Extent', 'Define extent to download', defaultValue=None))
         self.addParameter(QgsProcessingParameterString('layer_prefix', 'Prefix for layer name (i.e prefix_dem-name)', optional=True, multiLine=False, defaultValue=''))
-        self.addParameter(QgsProcessingParameterString('API_key', 'API key (for * DEMs)', optional=True, multiLine=False, defaultValue=''))
+        self.addParameter(QgsProcessingParameterString('API_key', 'Enter your API key', multiLine=False, defaultValue=''))
         #self.addParameter(QgsProcessingParameterBoolean('VERBOSE_LOG', 'logging', optional=True, defaultValue=False))
         
     def processAlgorithm(self, parameters, context, model_feedback):
@@ -79,35 +79,22 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
         dem_names = ['_SRTM90m','_SRTM30m','_AW3D30','_SRTM30m_E','_SRTM15Plus','_COP90','_COP30','_NASADEM']
         dem_code = dem_codes[parameters['DEMs']]
         dem_name = parameters['layer_prefix'] + dem_names [parameters['DEMs']]
-        dem_url = f'https://portal.opentopography.org/API/globaldem?demtype={dem_code}&south={south}&north={north}&west={west}&east={east}'
+        dem_url = f'https://portal.opentopography.org/API/globaldem?demtype={dem_code}&south={south}&north={north}&west={west}&east={east}&outputFormat=GTiff'
+        #dem_url = f'https://portal.opentopography.org/API/globaldem?demtype={dem_code}&south={south}&north={north}&west={west}&east={east}&outputFormat=GTiff&API_Key={parameters['API_key']}'
+        #print (dem_url)
+        
+        dem_url=dem_url + "&API_Key=" + parameters['API_key']
         print (dem_url)
-        # check API key if the dem selected needs
-        if parameters['DEMs']>4:
-            if len(parameters['API_key']):
-                dem_url=dem_url + "&API_Key=" + parameters['API_key']              
-                try:
-                    # Download file
-                    alg_params = {
-                        'URL': dem_url,
-                        'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
-                    }
-                    outputs['DownloadFile'] = processing.run('native:filedownloader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
-                except:
-                    raise QgsProcessingException ("API Key Error: Please check your API key")
-            else:
-                #QgsMessageBar().pushMessage("API Key missing", "Need API key", level=1,duration=5
-                raise QgsProcessingException ("API Key missing: Need API key to download selected DEM")                
-                
-        else:
-            try:
-                # Download file
-                alg_params = {
-                    'URL': dem_url,
-                    'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
-                }
-                outputs['DownloadFile'] = processing.run('native:filedownloader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
-            except:
-                raise QgsProcessingException ("Error Accessing DEM")
+        try:
+            # Download file
+            alg_params = {
+                'URL': dem_url,
+                'OUTPUT': QgsProcessing.TEMPORARY_OUTPUT
+            }
+            outputs['DownloadFile'] = processing.run('native:filedownloader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        except:
+            raise QgsProcessingException ("API Key Error: Please check your API key OR Cannot Access DEM")
+
                 
         feedback.setCurrentStep(1)
         if feedback.isCanceled():
@@ -130,7 +117,7 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
     def shortHelpString(self):
         help_text = """
         ဤကရိယာဖြင့် OpenTopography (https://opentopography.org/) မှ DEM များကိုမြေပုံပေါ်တွင် အလိုရှိရာ အကျယ်အဝန်းကို အသုံးပြုသူက သတ်မှတ်ပေးပြီးရယူနိုင်ပါသည်။ 
-        အချို့ DEM များ (* ဖြင့်ဆုံးသည့် အမည်များ) အတွက် API key ထည့်ပေးရန်လိုအပ်ပါမည်။ API key ရယူပုံကို https://opentopography.org/blog/introducing-api-keys-access-opentopography-global-datasets တွင်ဖတ်ရှုပါ
+        DEM အားလုံး အတွက် အတွက် API key ထည့်ပေးရန်လိုအပ်ပါမည်။ API key ရယူပုံကို https://opentopography.org/blog/introducing-api-keys-access-opentopography-global-datasets တွင်ဖတ်ရှုပါ
         
         DEM ကိုသိမ်းဆည်းလိုပါက Layer Export>Save as ဖြင့်သိမ်းဆည်းနိုင်သည်။        
                
@@ -147,11 +134,16 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
         email: kyawnaingwinknw@gmail.com
         
         change log:
+        ver03 - 21 Jan 2022
+         - ALL DEM needs API key
+        
+        ver01 - 29 Nov 2021..
+         - accept any CRS when defining extent
+        
         ver00 - 28 Nov 2021
          - first working version
          - none EPSG:4326 extent will throw error
-        ver01 - 29 Nov 2021..
-         - accept any CRS when defining extent
+
         """
         return self.tr(help_text)
 
