@@ -152,7 +152,7 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
         
         change log:
         ver05 - 2 Feb 2022
-         - API key is stored and read
+         - API key is stored and retrieved if exists
          
         ver04 - 27 Jan 2022
          - Script can be used in model builder
