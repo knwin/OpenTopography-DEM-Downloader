@@ -5,11 +5,11 @@ ver:1
 Date: 2021 Dec 31
 Group : DEM tools
 With QGIS : 31612
-change log:
+version : 5
 
 """
 
-from qgis.core import QgsProcessing
+from qgis.core import QgsProcessing, QgsSettings
 from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingMultiStepFeedback
 from qgis.core import QgsProcessingParameterString
@@ -29,11 +29,14 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
     INPUT = 'INPUT'
 
     def initAlgorithm(self, config=None):
+    
+        my_settings = QgsSettings()
+        my_api_key = my_settings.value("OpenTopographyDEMDownloader/ot_api_key", "")
 
         self.addParameter(QgsProcessingParameterEnum('DEMs', 'Select DEM to download', options=['SRTM 90m','SRTM 30m','ALOS World 3D 30m','SRTM GL1 Ellipsoidal 30m','Global Bathymetry SRTM15+ V2.1','Copernicus Global DSM 90m','Copernicus Global DSM 30m','NASADEM Global DEM'], allowMultiple=False, defaultValue=[0]))
         self.addParameter(QgsProcessingParameterExtent('Extent', 'Define extent to download', defaultValue=None))
         self.addParameter(QgsProcessingParameterString('layer_prefix', 'Prefix for layer name (i.e prefix_dem-name)', optional=True, multiLine=False, defaultValue=''))
-        self.addParameter(QgsProcessingParameterString('API_key', 'Enter your API key', multiLine=False, defaultValue=''))
+        self.addParameter(QgsProcessingParameterString('API_key', 'Enter your API key', multiLine=False, defaultValue=my_api_key))
         #self.addParameter(QgsProcessingParameterBoolean('VERBOSE_LOG', 'logging', optional=True, defaultValue=False))
         self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT, self.tr('Output Raster')))
 
@@ -96,6 +99,7 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
                 'OUTPUT': dem_file
             }            
             outputs['DownloadFile'] = processing.run('native:filedownloader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+            my_settings.setValue("OpenTopographyDEMDownloader/ot_api_key", parameters['API_key'])
             
         except:
             raise QgsProcessingException ("API Key Error: Please check your API key OR Cannot Access DEM")
@@ -147,6 +151,9 @@ class Opentopodemdownloader(QgsProcessingAlgorithm):
         email: kyawnaingwinknw@gmail.com
         
         change log:
+        ver05 - 2 Feb 2022
+         - API key is stored and read
+         
         ver04 - 27 Jan 2022
          - Script can be used in model builder
          
